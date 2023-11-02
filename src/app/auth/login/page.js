@@ -14,7 +14,6 @@ import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import authService from '@/services/auth';
 
-import { yupResolver } from '@hookform/resolvers/yup';
 import { loginSchema } from '@/schemas/auth.schema';
 import storage from '@/utils/storage';
 import { useRouter } from 'next/navigation';
@@ -33,42 +32,52 @@ export default function LoginPage() {
 
 const defaultTheme = createTheme();
 
-// TODO remove, this demo shouldn't need to reset the theme.
 function SignIn() {
 
     const router = useRouter();
-    
+
     const [alert, Snackbar] = useAlertSnackbar();
 
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        //yupResolver(loginSchema);
+        try {
+            const data = new FormData(event.currentTarget);
+            const email = data.get('email')
+            let auth = {}
+            if (email.includes('@')) {
+                auth.email = email
+            } else {
+                auth.username = email
+            }
 
-        const data = new FormData(event.currentTarget);
-        const payload = {
-            email: data.get('email'),
-            password: data.get('password'),
-        }
+            const payload = {
+                ...auth,
+                password: data.get('password'),
+            }
+            loginSchema.validateSync(payload);
 
-        console.log(payload);
-
-
-        authService.login(payload).then((token) => {
-            const user = decodeToken(token.access_token)
-            storage.set(STORAGE_KEYS.ACCESS_TOKEN, token.access_token)
-            storage.set(STORAGE_KEYS.USER, user)
-            console.log("/>>>>here", user)
-            router.push(`/user/${user.id}`);
-            console.log("here2>>>")
-        })
-        .catch(err => {
+            authService.login(payload).then((token) => {
+                const user = decodeToken(token.access_token)
+                storage.set(STORAGE_KEYS.ACCESS_TOKEN, token.access_token)
+                storage.set(STORAGE_KEYS.USER, user)
+                router.push(`/user/${user.id}`);
+            })
+                .catch(err => {
+                    alert({
+                        message: "Estamos presentando inconvenientes",
+                        description: err,
+                        type: "error",
+                    })
+                })
+        } catch (error) {
             alert({
-                message: "Estamos presentando inconvenientes",
-                description: err,
+                message: error.message,
+                description: '',
                 type: "error",
             })
-        })
+
+        }
     };
 
     return (

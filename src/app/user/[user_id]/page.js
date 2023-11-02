@@ -5,19 +5,14 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import Link from '@mui/material/Link';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { loginSchema } from '@/schemas/auth.schema';
 import storage from '@/utils/storage';
 import { useRouter } from 'next/navigation';
-import { decodeToken } from '@/utils/jwt';
-import Stack from '@mui/material/Stack';
-import CircularProgress from '@mui/material/CircularProgress';
+
 
 
 import { STORAGE_KEYS } from '../../../contants';
@@ -25,12 +20,16 @@ import userService from '../../../services/user'
 import Loader from '../../../components/Loader'
 import Copyright from '../../../components/Copyrigth'
 import useAlertSnackbar from '../../../hooks/useAlertSnackbar';
+import useAuthenticate from '../../../hooks/useAuthenticate';
+import { userSchema } from '@/schemas/user.schema';
+
 
 export default function UserProfilePage({ params }) {
 
     const user = useUser(params.user_id);
+    const { status, isAuthenticated } = useAuthenticate()
 
-    if (!user) {
+    if (!user || status === 'authenticating') {
         return (
             <Loader></Loader>
         )
@@ -43,10 +42,10 @@ export default function UserProfilePage({ params }) {
 
 const defaultTheme = createTheme();
 
-// TODO remove, this demo shouldn't need to reset the theme.
 function UpdatuUser({ user }) {
 
     const router = useRouter()
+
 
     const [alert, Snackbar] = useAlertSnackbar();
 
@@ -74,29 +73,38 @@ function UpdatuUser({ user }) {
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        //yupResolver(loginSchema);
+        try {
+            const data = new FormData(event.currentTarget);
+            const payload = {
+                email: data.get('email'),
+                name: data.get('name'),
+                lastname: data.get('lastname'),
+                username: data.get('username'),
+                password: data.get('password')
+            }
 
-        const data = new FormData(event.currentTarget);
-        const payload = {
-            email: data.get('email'),
-            name: data.get('name'),
-            lastname: data.get('lastname'),
-            username: data.get('username'),
-            password: data.get('password')
+            userSchema.validateSync(payload);
+      
+            userService.updateUser(user.id, payload)
+                .then((token) => {
+                    alert({
+                        message: 'Usuario editado correctamente'
+                    })
+                })
+                .catch(err => {
+                    alert({
+                        message: "Estamos presentando inconvenientes",
+                        description: err
+                    })
+                })
+        } catch (error) {
+            alert({
+                message: error.message,
+                description: '',
+                type: "error",
+            })
         }
 
-        userService.updateUser(user.id, payload)
-            .then((token) => {
-                alert({
-                    message: 'Usuario editado correctamente'
-                })
-            })
-            .catch(err => {
-                alert({
-                    message: "Estamos presentando inconvenientes",
-                    description: err
-                })
-            })
     };
 
     return (
@@ -204,19 +212,20 @@ function UpdatuUser({ user }) {
     );
 }
 
-const useUser = (user_id) => {
+const useUser = () => {
     const [user, setUser] = React.useState(null);
 
     React.useEffect(
         () => {
             const retrieveUser = async () => {
-                const user = await userService.getUser(user_id);
+                const token = storage.get(STORAGE_KEYS.ACCESS_TOKEN)
+                const user = await userService.getUser(token);
                 setUser(user)
             }
 
             retrieveUser()
         },
-        [setUser, user_id]
+        [setUser]
     );
 
     return user;

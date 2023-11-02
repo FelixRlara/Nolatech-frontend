@@ -32,7 +32,3 @@ $ npm  run  dev
 
 
 ```
-## Is this project deployed😎 ?
-
-if you can get it in the following link :
-[Nolatech]()

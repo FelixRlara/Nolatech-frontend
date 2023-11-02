@@ -15,7 +15,6 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 import authService from '@/services/auth';
 import { useRouter } from 'next/navigation';
-import { yupResolver } from '@hookform/resolvers/yup';
 import { registerSchema } from '@/schemas/auth.schema';
 
 import useAlertSnackbar from '../../../hooks/useAlertSnackbar';
@@ -29,7 +28,7 @@ export default function RegisterPage() {
 
 const defaultTheme = createTheme();
 
-// TODO remove, this demo shouldn't need to reset the theme.
+
 function Register() {
   const router = useRouter();
 
@@ -39,31 +38,35 @@ function Register() {
 
     event.preventDefault();
 
-    //1. Hacer validator con yup 
-    yupResolver(registerSchema);
+    try {
+      const data = new FormData(event.currentTarget);
+      const payload = {
+        email: data.get('email'),
+        password: data.get('password'),
+        name: data.get('name'),
+        lastname: data.get('lastname'),
+        username: data.get('username'),
+      }
+      registerSchema.validateSync(payload);
 
-    //2. Obtener data 
-    const data = new FormData(event.currentTarget);
-    const payload = {
-      email: data.get('email'),
-      password: data.get('password'),
-      name: data.get('name'),
-      lastname: data.get('lastname'),
-      username: data.get('username'),
-    }
-    console.log(payload);
-    //3. Llamar al servidor
 
-    authService.register(payload)
-      .then((user) => { })
-      .catch(err => {
-        alert({
-          message: "Estamos presentando inconvenientes",
-          description: err,
-          type: "error",
+
+      authService.register(payload)
+        .then((user) => { })
+        .catch(err => {
+          alert({
+            message: "Estamos presentando inconvenientes",
+            description: err,
+            type: "error",
+          })
         })
+    } catch (error) {
+      alert({
+        message: error.message,
+        description: '',
+        type: "error",
       })
-
+    }
 
   };
 

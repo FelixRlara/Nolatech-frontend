@@ -2,13 +2,11 @@ const { default: client } = require("./client")
 
 const userService = {
 
-   getUser: (userId) => {
-    console.log("user");
-    return client('GET',`/api/user/${userId}`);
+   getUser: (token) => {
+    return client('GET',`/api/user`,null,token);
    },
     
     updateUser: (userId, payload) => {
-        console.log("user");
         return client('PUT',`/api/user/${userId}`,payload);
     }
 }

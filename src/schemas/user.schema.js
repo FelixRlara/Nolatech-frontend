@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 
-export const userSchema = Yup.object().shape({
+export const userSchema = Yup.object({
     name: Yup.string()
         .min(2, 'minimo 2 caracteres!')
         .max(20, 'maximo 20 caracteres!')

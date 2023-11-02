@@ -1,24 +1,26 @@
 const HOST = "http://localhost:5000";
 
-const client = async (method,url,data) => {
-    try{
+const client = async (method, url, data, token) => {
+    try {
         const finalUrl = `${HOST}${url}`;
-    
+        let headers = {};
+        if (token) {
+            headers['Authorization'] = `bearer ${token}`
+        }
+
         const result = await fetch(finalUrl, {
             method,
-            body: JSON.stringify(data),
+            body: data ? JSON.stringify(data) : undefined,
             headers: {
-                'Content-Type': "application/json"
-                //'Authorization': 'Bearer ...'
+                'Content-Type': "application/json",
+                ...headers
             }
-        })
-        console.log("res",result);
 
-        if(!result.ok){
+        })
+
+        if (!result.ok) {
             const error = result.body;
-            console.log(">>>>>error client",error);
             const json = await result.json();
-            console.log(">>>>client json error",json)
             const errorPayload = {
                 status: result.status,
                 ok: result.ok,
@@ -30,8 +32,7 @@ const client = async (method,url,data) => {
         const json = await result.json();
 
         return json;
-    }catch(error){
-        console.log("There was an error",error);
+    } catch (error) {
         throw error;
     }
 
